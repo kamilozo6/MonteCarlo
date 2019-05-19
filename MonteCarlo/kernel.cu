@@ -1,6 +1,7 @@
 
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
+#include "Vector.cuh"
 
 #include <stdio.h>
 
@@ -11,6 +12,151 @@ __global__ void addKernel(int *c, const int *a, const int *b)
     int i = threadIdx.x;
     c[i] = a[i] + b[i];
 }
+
+__device__ void ChangeState(int result, int & yes, int & no, int & unknown)
+{
+	switch (result)
+	{
+	case 0:
+		// both the same
+		break;
+	case 1:
+		// yes + no
+		no--;
+		yes--;
+		unknown += 2;
+		break;
+	case 2:
+		// yes + unknown
+		yes++;
+		unknown--;
+		break;
+	case 3:
+		// no + unknown
+		no++;
+		unknown--;
+		break;
+	default:
+		break;
+	}
+}
+
+__device__ int CountSize(int n)
+{
+	int size = 0;
+	for (int i = 1; i <= n + 1; i++)
+	{
+		size += i;
+	}
+	return size;
+}
+
+__device__ int EvaluateCase(int yes, int no, int unknown, int n)
+{
+	int randomValue = rand() % n + 1;
+	// 0 yes, 1 no, 2 unknown
+	int firstSelection;
+	int secondSelection;
+	if (randomValue <= yes)
+	{
+		firstSelection = 0;
+		yes--;
+	}
+	else if (randomValue <= yes + no)
+	{
+		firstSelection = 1;
+		no--;
+	}
+	else
+	{
+		firstSelection = 2;
+		unknown--;
+	}
+
+	n--;
+	randomValue = rand() % n + 1;
+	if (randomValue <= yes)
+	{
+		secondSelection = 0;
+		yes--;
+	}
+	else if (randomValue <= yes + no)
+	{
+		secondSelection = 1;
+		no--;
+	}
+	else
+	{
+		secondSelection = 2;
+		unknown--;
+	}
+	int result = firstSelection ^ secondSelection;
+	return result;
+}
+
+__global__ MyMatrix* MonteCarlo(int n)
+{
+	int iterationNumber = 100000, size = CountSize(n);
+	MyMatrix *X = Vector::Create(size);
+	MyMatrix *numerator = Vector::Create(size);
+	MyMatrix *denominator = Vector::Create(size);
+	bool *casesUsed = new bool[size];
+	for (int i = 0; i < iterationNumber; i++)
+	{
+		bool end = false;
+		bool isYesResult = false;
+		int test = rand() % size;
+		int yes = n / 2, no = n / 2, unknown = n - yes - no;
+        Vector::GetYesNoFromIndex(test, n, yes, no);
+		unknown = n - yes - no;
+		for (int j = 0; j < size; j++)
+		{
+			casesUsed[j] = false;
+		}
+		casesUsed[Vector::ReturnIndex(yes, no, n)] = true;
+		while (!end)
+		{
+			int result = EvaluateCase(yes, no, unknown, n);
+			ChangeState(result, yes, no, unknown);
+
+			int index = Vector::ReturnIndex(yes, no, n);
+			casesUsed[index] = true;
+
+			if (yes == 0 || no == 0)
+			{
+				if (yes > 0)
+				{
+					isYesResult = true;
+				}
+				end = true;
+			}
+		}
+		for (int j = 0; j < size; j++)
+		{
+			if (casesUsed[j])
+			{
+				if (isYesResult)
+				{
+					numerator->matrix[j][0]++;
+				}
+				denominator->matrix[j][0]++;
+			}
+		}
+	}
+	delete casesUsed;
+	for (int i = 0; i < size; i++)
+	{
+		if (denominator->matrix[i][0] != 0)
+		{
+			X->matrix[i][0] = numerator->matrix[i][0] / denominator->matrix[i][0];
+		}
+	}
+
+	delete numerator;
+	delete denominator;
+	return X;
+}
+
 
 int main()
 {
