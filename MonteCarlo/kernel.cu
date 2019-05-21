@@ -302,14 +302,15 @@ double* mains(int rank, int proccount, int* outSize, int* outProcSize)
 	int size = CountSize(PEOPLE_NUM);
 	int sizePerProc = size / proccount;
 	int procSize;
-	if (proccount - 1 == rank)
-	{
-		procSize = (size - (proccount - 1) * sizePerProc);
-	}
-	else
-	{
-		procSize = sizePerProc;
-	}
+	// if (proccount - 1 == rank)
+	// {
+	// 	procSize = (size - (proccount - 1) * sizePerProc);
+	// }
+	// else
+	// {
+	// 	procSize = sizePerProc;
+	// }
+    procSize = sizePerProc + 1;
 	*outProcSize = procSize;
 	*outSize = size;
 	size_t free, total;
@@ -337,8 +338,9 @@ double* NonOptimizedMPI(int procSize, int rank, int sizePerProc)
 	int* cu_statesNumerators;
 	int* cu_statesDenominators;
 	cudaError_t cudaStatus;
+    printf("rank %d\n", rank);
 
-	printf("rank %d\n", procSize);
+	printf("procSize %d\n", procSize);
 	// Allocate memory on gpu
 	cudaStatus = cudaMalloc((void**)& cu_winProbabilities, procSize * sizeof(double));
 	if (cudaStatus != cudaSuccess)
@@ -400,26 +402,26 @@ double* NonOptimizedMPI(int procSize, int rank, int sizePerProc)
 void NonOptimized();
 void Optimized();
 
-int main()
-{
-	std::cout << "People number: " << PEOPLE_NUM << std::endl;
-	std::cout << "Iterations number: " << ITERATIONS_NUM << std::endl;
-	std::cout << "States number: " << CountSize(PEOPLE_NUM) << std::endl;
-
-	auto start = high_resolution_clock::now();
-	Optimized();
-	auto stop = high_resolution_clock::now();
-	auto duration = duration_cast<milliseconds>(stop - start);
-	std::cout << "Optimized time: \t" << duration.count() << "ms" << std::endl;
-
-	start = high_resolution_clock::now();
-	NonOptimized();
-	stop = high_resolution_clock::now();
-	duration = duration_cast<milliseconds>(stop - start);
-	std::cout << "Non optimized time: \t" << duration.count() << "ms" << std::endl;
-
-	return 0;
-}
+// int main()
+// {
+// 	std::cout << "People number: " << PEOPLE_NUM << std::endl;
+// 	std::cout << "Iterations number: " << ITERATIONS_NUM << std::endl;
+// 	std::cout << "States number: " << CountSize(PEOPLE_NUM) << std::endl;
+//
+// 	auto start = high_resolution_clock::now();
+// 	Optimized();
+// 	auto stop = high_resolution_clock::now();
+// 	auto duration = duration_cast<milliseconds>(stop - start);
+// 	std::cout << "Optimized time: \t" << duration.count() << "ms" << std::endl;
+//
+// 	start = high_resolution_clock::now();
+// 	NonOptimized();
+// 	stop = high_resolution_clock::now();
+// 	duration = duration_cast<milliseconds>(stop - start);
+// 	std::cout << "Non optimized time: \t" << duration.count() << "ms" << std::endl;
+//
+// 	return 0;
+// }
 
 void NonOptimized()
 {

@@ -13,8 +13,12 @@ int main(int argc, char* argv[])
 	MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
 	// find out the number of processes in MPI_COMM_WORLD
 	MPI_Comm_size(MPI_COMM_WORLD, &proccount);
-	
+
 	winProbabilities = mains(myrank,proccount,&size,&procSize);
+    double* allWinProbabilities;
+    if (myrank == 0)
+        allWinProbabilities = new double[(size/proccount + 1) * proccount];
+    MPI_Gather(winProbabilities, procSize, MPI_DOUBLE, allWinProbabilities, (size/proccount + 1) * proccount, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
 	delete winProbabilities;
 
