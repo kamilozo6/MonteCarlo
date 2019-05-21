@@ -232,6 +232,51 @@ __global__ void MonteCarloOpt(double* winProbabilities, int states, int peoples,
 	winProbabilities[tId] /= iterationsNum;
 }
 
+__global__ void MonteCarloMPI(int* outNumerators, int* outDenominators, int states, int peoples, int iterationsNum, int rank, int sizePerProc)
+{
+	int tId = threadIdx.x + (blockIdx.x * blockDim.x);
+	if (tId >= states)
+	{
+		return;
+	}
+	// Init random numbers generator
+	curandState randState;
+	curand_init((unsigned long long)clock() + tId, 0, 0, &randState);
+
+	for (int i = 0; i < iterationsNum; i++)
+	{
+		bool end = false;
+		bool isYesResult = false;
+		// Begining state
+		int test = tId + rank * sizePerProc;
+		int yes = peoples / 2, no = peoples / 2, unknown = peoples - yes - no;
+		// Get yes, no numbers according to state
+		GetYesNoFromIndex(test, peoples, yes, no);
+		unknown = peoples - yes - no;
+		while (!end)
+		{
+			int result = EvaluateCase(yes, no, unknown, peoples, &randState);
+			ChangeState(result, yes, no, unknown);
+
+			// If yes == 0 there is no chance to "win"
+			// If no == 0 there is no chance to "lose"
+			if (yes == 0 || no == 0)
+			{
+				if (yes > 0)
+				{
+					isYesResult = true;
+				}
+				end = true;
+			}
+		}
+		if (isYesResult)
+		{
+			outNumerators[tId] ++;
+		}
+		outDenominators[tId] ++;
+	}
+}
+
 __global__ void CalculateProbabilities(int* numerators, int* denominators, double* winProbabilities, int states)
 {
 	int tId = threadIdx.x + (blockIdx.x * blockDim.x);
@@ -244,8 +289,7 @@ __global__ void CalculateProbabilities(int* numerators, int* denominators, doubl
 	}
 }
 
-void NonOptimized();
-void Optimized();
+double* NonOptimizedMPI(int procSize, int rank, int sizePerProc);
 
 // Size control varaibles
 #define PEOPLE_NUM 100
@@ -253,17 +297,120 @@ void Optimized();
 #define THREAD_NUMBER 256
 //#define PRINT_RES
 
+double* mains(int rank, int proccount, int* outSize, int* outProcSize)
+{
+	int size = CountSize(PEOPLE_NUM);
+	int sizePerProc = size / proccount;
+	int procSize;
+	if (proccount - 1 == rank)
+	{
+		procSize = (size - (proccount - 1) * sizePerProc);
+	}
+	else
+	{
+		procSize = sizePerProc;
+	}
+	*outProcSize = procSize;
+	*outSize = size;
+	size_t free, total;
+	cudaMemGetInfo(&free, &total);
+	int count;
+	cudaGetDeviceCount(&count);
+	printf("free: %d total: %d count: %d\n", free, total, count);
+
+	return NonOptimizedMPI(procSize, rank, sizePerProc);
+}
+
+double* NonOptimizedMPI(int procSize, int rank, int sizePerProc)
+{
+	// Monte carlo init numbers
+	const int iterationsNumber = ITERATIONS_NUM;
+	const int peopleNumber = PEOPLE_NUM;
+	const int statesNumber = CountSize(peopleNumber);
+	double* winProbabilities = new double[procSize];
+
+	// Threads and blocks
+	const int threadsNumber = THREAD_NUMBER;
+	int blocksNumber;
+	// Cuda variables
+	double* cu_winProbabilities;
+	int* cu_statesNumerators;
+	int* cu_statesDenominators;
+	cudaError_t cudaStatus;
+
+	printf("rank %d\n", procSize);
+	// Allocate memory on gpu
+	cudaStatus = cudaMalloc((void**)& cu_winProbabilities, procSize * sizeof(double));
+	if (cudaStatus != cudaSuccess)
+	{
+		fprintf(stderr, "Failed to allocate (error code %s)!\n", cudaGetErrorString(cudaStatus));
+		exit(EXIT_FAILURE);
+	}
+
+	printf("rank %d\n", procSize);
+	cudaStatus = cudaMalloc((void**)& cu_statesNumerators, procSize * sizeof(int));
+	if (cudaStatus != cudaSuccess)
+	{
+		fprintf(stderr, "Failed to allocate (error code %s)!\n", cudaGetErrorString(cudaStatus));
+		exit(EXIT_FAILURE);
+	}
+
+	printf("rank %d\n", procSize);
+	cudaStatus = cudaMalloc((void**)& cu_statesDenominators, procSize * sizeof(int));
+	if (cudaStatus != cudaSuccess)
+	{
+		fprintf(stderr, "Failed to allocate (error code %s)!\n", cudaGetErrorString(cudaStatus));
+		exit(EXIT_FAILURE);
+	}
+
+	printf("rank %d\n", procSize);
+	// Set numerators and denominators values to 0
+	cudaMemset(cu_statesNumerators, 0, procSize * sizeof(int));
+	cudaMemset(cu_statesDenominators, 0, procSize * sizeof(int));
+	cudaMemset(cu_winProbabilities, 0, procSize * sizeof(double));
+
+	// Monte Carlo simulation
+	blocksNumber = (procSize + threadsNumber - 1) / threadsNumber;
+	MonteCarloMPI << <blocksNumber, threadsNumber >> > (cu_statesNumerators, cu_statesDenominators, procSize, peopleNumber, iterationsNumber, rank, sizePerProc);
+
+
+	// Calculate states probabilities to win
+	blocksNumber = (procSize + threadsNumber - 1) / threadsNumber;
+	CalculateProbabilities << <blocksNumber, threadsNumber >> > (cu_statesNumerators, cu_statesDenominators, cu_winProbabilities, procSize);
+
+	// Copy results to host
+	cudaMemcpy(winProbabilities, cu_winProbabilities, procSize * sizeof(double), cudaMemcpyDeviceToHost);
+
+#ifdef PRINT_RES
+	// Print results
+	for (int i = 0; i < statesNumber; i++)
+	{
+		std::cout << winProbabilities[i] << std::endl;
+	}
+#endif
+
+	// Free memory
+	cudaFree(cu_winProbabilities);
+	cudaFree(cu_statesNumerators);
+	cudaFree(cu_statesDenominators);
+
+	return winProbabilities;
+}
+
+void NonOptimized();
+void Optimized();
+
 int main()
 {
 	std::cout << "People number: " << PEOPLE_NUM << std::endl;
 	std::cout << "Iterations number: " << ITERATIONS_NUM << std::endl;
-	std::cout << "States number: " << CountSize(PEOPLE_NUM) << std::endl;	
+	std::cout << "States number: " << CountSize(PEOPLE_NUM) << std::endl;
 
 	auto start = high_resolution_clock::now();
 	Optimized();
 	auto stop = high_resolution_clock::now();
 	auto duration = duration_cast<milliseconds>(stop - start);
-	std::cout << "Optimized time: \t" << duration.count() << "ms" << std::endl;	
+	std::cout << "Optimized time: \t" << duration.count() << "ms" << std::endl;
 
 	start = high_resolution_clock::now();
 	NonOptimized();
@@ -288,7 +435,7 @@ void NonOptimized()
 	double* cu_winProbabilities;
 	int* cu_statesNumerators;
 	int* cu_statesDenominators;
-	cudaError_t cudaStatus;	
+	cudaError_t cudaStatus;
 
 	// Allocate memory on gpu
 	cudaStatus = cudaMalloc((void**)& cu_winProbabilities, statesNumber * sizeof(double));
@@ -318,7 +465,7 @@ void NonOptimized()
 	// Monte Carlo simulation
 	blocksNumber = (statesNumber + threadsNumber - 1) / threadsNumber;
 	MonteCarlo << <blocksNumber, threadsNumber >> > (cu_statesNumerators, cu_statesDenominators, statesNumber, peopleNumber, iterationsNumber);
-	
+
 
 	// Calculate states probabilities to win
 	blocksNumber = (statesNumber + threadsNumber - 1) / threadsNumber;
@@ -371,7 +518,7 @@ void Optimized()
 	// Monte Carlo simulation
 	blocksNumber = (statesNumber + threadsNumber - 1) / threadsNumber;
 	MonteCarloOpt << <blocksNumber, threadsNumber >> > (cu_winProbabilities, statesNumber, peopleNumber, iterationsNumber);
-	
+
 	// Copy results to host
 	cudaMemcpy(winProbabilities, cu_winProbabilities, statesNumber * sizeof(double), cudaMemcpyDeviceToHost);
 
