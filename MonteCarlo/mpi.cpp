@@ -18,7 +18,7 @@ int main(int argc, char* argv[])
     double* allWinProbabilities;
     if (myrank == 0)
         allWinProbabilities = new double[(size/proccount + 1) * proccount];
-    MPI_Gather(winProbabilities, procSize, MPI_DOUBLE, allWinProbabilities, (size/proccount + 1) * proccount, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Gather(winProbabilities, procSize, MPI_DOUBLE, allWinProbabilities, (size/proccount + 1), MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
 	delete winProbabilities;
 

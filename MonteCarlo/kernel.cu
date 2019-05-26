@@ -145,7 +145,7 @@ __global__ void MonteCarloOpt(double* winProbabilities, int states, int peoples,
 {
 	extern __shared__ double s[];
 	int tId = threadIdx.x + (blockIdx.x * blockDim.x);
-	if (blockIdx.x >= states)
+	if (tId >= states)
 	{
 		return;
 	}
@@ -165,7 +165,7 @@ __global__ void MonteCarloOpt(double* winProbabilities, int states, int peoples,
 		bool end = false;
 		bool isYesResult = false;
 		// Begining state
-		int test = blockIdx.x;
+		int test = tId;
 		int yes = peoples / 2, no = peoples / 2, unknown = peoples - yes - no;
 		// Get yes, no numbers according to state
 		GetYesNoFromIndex(test, peoples, yes, no);
@@ -188,64 +188,13 @@ __global__ void MonteCarloOpt(double* winProbabilities, int states, int peoples,
 		}
 		if (isYesResult)
 		{
-			s[threadIdx.x] += 1.0;
+			outNumerators[tId] ++;
 		}
-	}
-	__syncthreads();
-
-	if (threadIdx.x == 0)
-	{
-		for (int i = 0; i < blockDim.x; i++)
-		{
-			winProbabilities[blockIdx.x] += s[i];
-		}
-		winProbabilities[blockIdx.x] /= iterationsNum;
+		outDenominators[tId] ++;
 	}
 }
 
-__global__ void MonteCarloSeq(double* winProbabilities, int states, int peoples, int iterationsNum)
-{
-	// Init random numbers generator
-	curandState randState;
-	curand_init((unsigned long long)clock(), 0, 0, &randState);
-	for (int st = 0; st < states; st++)
-	{
-		for (int i = 0; i < iterationsNum; i++)
-		{
-			bool end = false;
-			bool isYesResult = false;
-			// Begining state
-			int test = st;
-			int yes = peoples / 2, no = peoples / 2, unknown = peoples - yes - no;
-			// Get yes, no numbers according to state
-			GetYesNoFromIndex(test, peoples, yes, no);
-			unknown = peoples - yes - no;
-			while (!end)
-			{
-				int result = EvaluateCase(yes, no, unknown, peoples, &randState);
-				ChangeState(result, yes, no, unknown);
-
-				// If yes == 0 there is no chance to "win"
-				// If no == 0 there is no chance to "lose"
-				if (yes == 0 || no == 0)
-				{
-					if (yes > 0)
-					{
-						isYesResult = true;
-					}
-					end = true;
-				}
-			}
-			if (isYesResult)
-			{
-				winProbabilities[st] += 1.0;
-			}
-		}
-		winProbabilities[st] /= iterationsNum;
-	}
-}
-
-__global__ void MonteCarlo(double* winProbabilities, int states, int peoples, int iterationsNum)
+__global__ void MonteCarloOpt(double* winProbabilities, int states, int peoples, int iterationsNum)
 {
 	int tId = threadIdx.x + (blockIdx.x * blockDim.x);
 	if (tId >= states)
@@ -291,10 +240,10 @@ __global__ void MonteCarlo(double* winProbabilities, int states, int peoples, in
 	winProbabilities[tId] /= iterationsNum;
 }
 
-__global__ void MonteCarloMPI(double* winProbabilities, int states, int peoples, int iterationsNum, int rank, int sizePerProc)
+__global__ void MonteCarloMPI(double* winProbabilities, int states, int peoples, int iterationsNum, int rank, int allStates)
 {
 	int tId = threadIdx.x + (blockIdx.x * blockDim.x);
-	if (tId >= states)
+	if (tId + rank * states >= allStates)
 	{
 		return;
 	}
@@ -307,7 +256,7 @@ __global__ void MonteCarloMPI(double* winProbabilities, int states, int peoples,
 		bool end = false;
 		bool isYesResult = false;
 		// Begining state
-		int test = tId + rank * sizePerProc;
+		int test = tId + rank * states;
 		int yes = peoples / 2, no = peoples / 2, unknown = peoples - yes - no;
 		// Get yes, no numbers according to state
 		GetYesNoFromIndex(test, peoples, yes, no);
@@ -339,7 +288,7 @@ __global__ void MonteCarloMPI(double* winProbabilities, int states, int peoples,
 double* NonOptimizedMPI(int procSize, int rank, int sizePerProc);
 
 // Size control varaibles
-#define PEOPLE_NUM 100
+#define PEOPLE_NUM 150
 #define ITERATIONS_NUM 10000
 #define THREAD_NUMBER 256
 #define OPT_THREAD_NUMBER 256
@@ -409,7 +358,7 @@ double* NonOptimizedMPI(int procSize, int rank, int sizePerProc)
 
 #ifdef PRINT_RES
 	// Print results
-	for (int i = 0; i < statesNumber; i++)
+	for (int i = 0; i < procSize; i++)
 	{
 		std::cout << winProbabilities[i] << std::endl;
 	}
