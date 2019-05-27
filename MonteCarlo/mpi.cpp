@@ -27,8 +27,22 @@ int main(int argc, char* argv[])
 	MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
 	// find out the number of processes in MPI_COMM_WORLD
 	MPI_Comm_size(MPI_COMM_WORLD, &proccount);
-
-    for (PEOPLE_NUM_MPI = 5; PEOPLE_NUM_MPI < 7; PEOPLE_NUM_MPI++)
+    std::cout << "PEPOPLE" << std::endl;
+    for (PEOPLE_NUM_MPI = 5; PEOPLE_NUM_MPI < 150; PEOPLE_NUM_MPI++)
+    {
+        start = high_resolution_clock::now();
+        
+        winProbabilities = mains(myrank,proccount,&size,&procSize, PEOPLE_NUM_MPI, THREAD_NUMBER_MPI);
+        double* allWinProbabilities;
+        if (myrank == 0)
+            allWinProbabilities = new double[(size/proccount + 1) * proccount];
+        MPI_Gather(winProbabilities, procSize, MPI_DOUBLE, allWinProbabilities, (size/proccount + 1), MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        stop = high_resolution_clock::now();
+        duration = duration_cast<milliseconds>(stop - start);
+        std::cout << PEOPLE_NUM_MPI << "," << THREAD_NUMBER_MPI << "," << duration.count() << std::endl;
+    }
+    std::cout << "THREAD_NUM" << std::endl;
+    for (THREAD_NUMBER_MPI = 32; THREAD_NUMBER_MPI < 256; THREAD_NUMBER_MPI++)
     {
         start = high_resolution_clock::now();
         
