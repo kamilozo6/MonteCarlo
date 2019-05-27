@@ -332,8 +332,8 @@ __global__ void MonteCarloMPI(double* winProbabilities, int states, int peoples,
 		{
 			winProbabilities[tId] += 1.0;
 		}
-		winProbabilities[tId] /= iterationsNum;
 	}
+    winProbabilities[tId] /= iterationsNum;
 }
 
 __global__ void MonteCarloOptMPI(double* winProbabilities, int states, int peoples, int iterationsNum, int rank, int allStates)
@@ -399,6 +399,7 @@ __global__ void MonteCarloOptMPI(double* winProbabilities, int states, int peopl
 }
 
 double* NonOptimizedMPI(int procSize, int rank, int sizePerProc);
+double* OptimizedMPI(int procSize, int rank, int sizePerProc);
 
 // Size control varaibles
 #define PEOPLE_NUM 100
@@ -429,7 +430,7 @@ double* mains(int rank, int proccount, int* outSize, int* outProcSize)
 	cudaGetDeviceCount(&count);
 	printf("free: %d total: %d count: %d\n", free, total, count);
 
-	return NonOptimizedMPI(procSize, rank, sizePerProc);
+	return OptimizedMPI(procSize, rank, sizePerProc);
 }
 
 double* NonOptimizedMPI(int procSize, int rank, int sizePerProc)
