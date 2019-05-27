@@ -1,1 +1,1 @@
-time mpirun -np 1 ./a.out
+mpirun -np 1 ./a.out > result.txt

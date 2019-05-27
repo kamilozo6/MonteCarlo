@@ -12,6 +12,12 @@
 #include <chrono> 
 using namespace std::chrono;
 
+// Size control varaibles
+#define ITERATIONS_NUM 10000
+
+unsigned int PEOPLE_NUM; //100
+unsigned int THREAD_NUMBER; //256
+unsigned int OPT_THREAD_NUMBER; //256
 
 __device__ void ChangeState(int result, int& yes, int& no, int& unknown)
 {
@@ -401,26 +407,19 @@ __global__ void MonteCarloOptMPI(double* winProbabilities, int states, int peopl
 double* NonOptimizedMPI(int procSize, int rank, int sizePerProc);
 double* OptimizedMPI(int procSize, int rank, int sizePerProc);
 
-// Size control varaibles
-#define PEOPLE_NUM 100
-#define ITERATIONS_NUM 10000
-#define THREAD_NUMBER 256
-#define OPT_THREAD_NUMBER 256
 //#define PRINT_RES
 
-double* mains(int rank, int proccount, int* outSize, int* outProcSize)
+double* mains(int rank, int proccount, int* outSize, int* outProcSize, unsigned int peopleNum, unsigned int threadNum)
 {
 	int size = CountSize(PEOPLE_NUM);
 	int sizePerProc = size / proccount;
 	int procSize;
-	// if (proccount - 1 == rank)
-	// {
-	// 	procSize = (size - (proccount - 1) * sizePerProc);
-	// }
-	// else
-	// {
-	// 	procSize = sizePerProc;
-	// }
+    
+    PEOPLE_NUM = peopleNum;
+    THREAD_NUMBER = threadNum;
+    OPT_THREAD_NUMBER = threadNum;
+    
+
 	procSize = sizePerProc + 1;
 	*outProcSize = procSize;
 	*outSize = size;
