@@ -25,7 +25,7 @@ int main(int argc, char* argv[])
     int i;
     for (i = 0; i < (size/proccount + 1) * proccount; i++)
     {
-        printf("%f\n", allWinProbabilities[i];
+        printf("%f\n", allWinProbabilities[i]);
     }
 #endif
 
