@@ -538,7 +538,7 @@ void SequentialRun();
 void NonOptimized();
 void Optimized();
 
-int main()
+int mainss()
 {
 	std::cout << "People number: " << PEOPLE_NUM << std::endl;
 	std::cout << "Iterations number: " << ITERATIONS_NUM << std::endl;

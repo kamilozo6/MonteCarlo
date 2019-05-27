@@ -1,4 +1,5 @@
 #include "mpi.h"
+#define PRINT_RESULT
 
 double* mains(int rank, int proccount, int* outSize, int* outProcSize);
 
@@ -19,6 +20,14 @@ int main(int argc, char* argv[])
     if (myrank == 0)
         allWinProbabilities = new double[(size/proccount + 1) * proccount];
     MPI_Gather(winProbabilities, procSize, MPI_DOUBLE, allWinProbabilities, (size/proccount + 1), MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+#ifdef PRINT_RESULT
+    int i;
+    for (i = 0; i < (size/proccount + 1) * proccount; i++)
+    {
+        printf("%f\n", allWinProbabilities[i];
+    }
+#endif
 
 	delete winProbabilities;
 
