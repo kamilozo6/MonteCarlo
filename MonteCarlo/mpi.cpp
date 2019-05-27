@@ -1,12 +1,13 @@
 #include "mpi.h"
 #include <chrono>
+#include <iostream>
 using namespace std::chrono;
 //#define PRINT_RESULT
 
-unsigned int PEOPLE_NUM; //100
-unsigned int THREAD_NUMBER; //256
+unsigned int PEOPLE_NUM_MPI; //100
+unsigned int THREAD_NUMBER_MPI; //256
 
-double* mains(int rank, int proccount, int* outSize, int* outProcSize);
+double* mains(int rank, int proccount, int* outSize, int* outProcSize, unsigned int peopleNum, unsigned int threadNum);
 
 int main(int argc, char* argv[])
 {
@@ -14,9 +15,12 @@ int main(int argc, char* argv[])
 	int size, procSize;
 	double* winProbabilities;
 
-    PEOPLE_NUM = 5;
-    THREAD_NUMBER = 5;
-    OPT_THREAD_NUMBER = 5;
+    PEOPLE_NUM_MPI = 5;
+    THREAD_NUMBER_MPI = 5;
+    
+    auto start = high_resolution_clock::now();
+	auto stop = high_resolution_clock::now();
+	auto duration = duration_cast<milliseconds>(stop - start);
 
 	MPI_Init(&argc, &argv);
 	// find out my rank
@@ -24,18 +28,18 @@ int main(int argc, char* argv[])
 	// find out the number of processes in MPI_COMM_WORLD
 	MPI_Comm_size(MPI_COMM_WORLD, &proccount);
 
-    for (PEOPLE_NUM = 5; PEOPLE_NUM < 7; PEOPLE_NUM++)
+    for (PEOPLE_NUM_MPI = 5; PEOPLE_NUM_MPI < 7; PEOPLE_NUM_MPI++)
     {
         start = high_resolution_clock::now();
         
-        winProbabilities = mains(myrank,proccount,&size,&procSize);
+        winProbabilities = mains(myrank,proccount,&size,&procSize, PEOPLE_NUM_MPI, THREAD_NUMBER_MPI);
         double* allWinProbabilities;
         if (myrank == 0)
             allWinProbabilities = new double[(size/proccount + 1) * proccount];
         MPI_Gather(winProbabilities, procSize, MPI_DOUBLE, allWinProbabilities, (size/proccount + 1), MPI_DOUBLE, 0, MPI_COMM_WORLD);
         stop = high_resolution_clock::now();
         duration = duration_cast<milliseconds>(stop - start);
-        std::cout << PEOPLE_NUM << "," << THREAD_NUMBER << "," << duration.count() << std::endl;
+        std::cout << PEOPLE_NUM_MPI << "," << THREAD_NUMBER_MPI << "," << duration.count() << std::endl;
     }
 
 #ifdef PRINT_RESULT

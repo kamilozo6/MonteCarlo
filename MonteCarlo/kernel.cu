@@ -427,7 +427,7 @@ double* mains(int rank, int proccount, int* outSize, int* outProcSize, unsigned 
 	cudaMemGetInfo(&free, &total);
 	int count;
 	cudaGetDeviceCount(&count);
-	printf("free: %d total: %d count: %d\n", free, total, count);
+	//printf("free: %d total: %d count: %d\n", free, total, count);
 
 	return OptimizedMPI(procSize, rank, sizePerProc);
 }
@@ -446,9 +446,9 @@ double* NonOptimizedMPI(int procSize, int rank, int sizePerProc)
 	// Cuda variables
 	double* cu_winProbabilities;
 	cudaError_t cudaStatus;
-	printf("rank %d\n", rank);
+	//printf("rank %d\n", rank);
 
-	printf("procSize %d\n", procSize);
+	//printf("procSize %d\n", procSize);
 	// Allocate memory on gpu
 	cudaStatus = cudaMalloc((void**)& cu_winProbabilities, procSize * sizeof(double));
 	if (cudaStatus != cudaSuccess)
@@ -457,7 +457,7 @@ double* NonOptimizedMPI(int procSize, int rank, int sizePerProc)
 		exit(EXIT_FAILURE);
 	}
 
-	printf("rank %d\n", procSize);
+	//printf("rank %d\n", procSize);
 	// Set numerators and denominators values to 0
 	cudaMemset(cu_winProbabilities, 0, procSize * sizeof(double));
 
@@ -497,9 +497,9 @@ double* OptimizedMPI(int procSize, int rank, int sizePerProc)
 	// Cuda variables
 	double* cu_winProbabilities;
 	cudaError_t cudaStatus;
-	printf("rank %d\n", rank);
+	//printf("rank %d\n", rank);
 
-	printf("procSize %d\n", procSize);
+	//printf("procSize %d\n", procSize);
 	// Allocate memory on gpu
 	cudaStatus = cudaMalloc((void**)& cu_winProbabilities, procSize * sizeof(double));
 	if (cudaStatus != cudaSuccess)
