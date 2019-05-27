@@ -429,7 +429,7 @@ double* mains(int rank, int proccount, int* outSize, int* outProcSize, unsigned 
 	cudaGetDeviceCount(&count);
 	//printf("free: %d total: %d count: %d\n", free, total, count);
 
-	return OptimizedMPI(procSize, rank, sizePerProc);
+	return NonOptimizedMPI(procSize, rank, sizePerProc);
 }
 
 double* NonOptimizedMPI(int procSize, int rank, int sizePerProc)

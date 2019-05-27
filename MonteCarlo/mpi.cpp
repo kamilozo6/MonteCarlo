@@ -40,7 +40,8 @@ int main(int argc, char* argv[])
         MPI_Gather(winProbabilities, procSize, MPI_DOUBLE, allWinProbabilities, (size/proccount + 1), MPI_DOUBLE, 0, MPI_COMM_WORLD);
         stop = high_resolution_clock::now();
         duration = duration_cast<milliseconds>(stop - start);
-        std::cout << PEOPLE_NUM_MPI << "," << THREAD_NUMBER_MPI << "," << duration.count() << std::endl;
+        if (myrank == 0)
+            std::cout << PEOPLE_NUM_MPI << "," << THREAD_NUMBER_MPI << "," << duration.count() << std::endl;
     }
     PEOPLE_NUM_MPI = 80;
     std::cout << "THREAD_NUM" << std::endl;
