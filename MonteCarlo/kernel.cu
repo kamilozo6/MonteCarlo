@@ -508,7 +508,7 @@ double* OptimizedMPI(int procSize, int rank, int sizePerProc)
 		exit(EXIT_FAILURE);
 	}
 
-	printf("rank %d\n", procSize);
+	//printf("rank %d\n", procSize);
 	// Set numerators and denominators values to 0
 	cudaMemset(cu_winProbabilities, 0, procSize * sizeof(double));
 
