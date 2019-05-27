@@ -29,7 +29,7 @@ int main(int argc, char* argv[])
 	MPI_Comm_size(MPI_COMM_WORLD, &proccount);
     std::cout << "PEPOPLE" << std::endl;
     THREAD_NUMBER_MPI = 256;
-    for (PEOPLE_NUM_MPI = 5; PEOPLE_NUM_MPI < 150; PEOPLE_NUM_MPI +=5 )
+    for (PEOPLE_NUM_MPI = 5; PEOPLE_NUM_MPI <= 140; PEOPLE_NUM_MPI +=5 )
     {
         start = high_resolution_clock::now();
         
@@ -44,7 +44,7 @@ int main(int argc, char* argv[])
     }
     PEOPLE_NUM_MPI = 80;
     std::cout << "THREAD_NUM" << std::endl;
-    for (THREAD_NUMBER_MPI = 8; THREAD_NUMBER_MPI < 256; THREAD_NUMBER_MPI+= 4)
+    for (THREAD_NUMBER_MPI = 8; THREAD_NUMBER_MPI <= 128; THREAD_NUMBER_MPI+= 4)
     {
         start = high_resolution_clock::now();
         
@@ -55,7 +55,8 @@ int main(int argc, char* argv[])
         MPI_Gather(winProbabilities, procSize, MPI_DOUBLE, allWinProbabilities, (size/proccount + 1), MPI_DOUBLE, 0, MPI_COMM_WORLD);
         stop = high_resolution_clock::now();
         duration = duration_cast<milliseconds>(stop - start);
-        std::cout << PEOPLE_NUM_MPI << "," << THREAD_NUMBER_MPI << "," << duration.count() << std::endl;
+        if (myrank == 0)
+            std::cout << PEOPLE_NUM_MPI << "," << THREAD_NUMBER_MPI << "," << duration.count() << std::endl;
     }
 
 #ifdef PRINT_RESULT
