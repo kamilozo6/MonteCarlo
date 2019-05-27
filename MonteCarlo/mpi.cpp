@@ -29,7 +29,7 @@ int main(int argc, char* argv[])
 	MPI_Comm_size(MPI_COMM_WORLD, &proccount);
     std::cout << "PEPOPLE" << std::endl;
     THREAD_NUMBER_MPI = 256;
-    for (PEOPLE_NUM_MPI = 5; PEOPLE_NUM_MPI < 150; PEOPLE_NUM_MPI++)
+    for (PEOPLE_NUM_MPI = 5; PEOPLE_NUM_MPI < 150; PEOPLE_NUM_MPI +=5 )
     {
         start = high_resolution_clock::now();
         
@@ -42,8 +42,9 @@ int main(int argc, char* argv[])
         duration = duration_cast<milliseconds>(stop - start);
         std::cout << PEOPLE_NUM_MPI << "," << THREAD_NUMBER_MPI << "," << duration.count() << std::endl;
     }
+    PEOPLE_NUM_MPI = 80;
     std::cout << "THREAD_NUM" << std::endl;
-    for (THREAD_NUMBER_MPI = 32; THREAD_NUMBER_MPI < 256; THREAD_NUMBER_MPI++)
+    for (THREAD_NUMBER_MPI = 8; THREAD_NUMBER_MPI < 256; THREAD_NUMBER_MPI+= 4)
     {
         start = high_resolution_clock::now();
         
