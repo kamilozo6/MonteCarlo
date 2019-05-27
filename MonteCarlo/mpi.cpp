@@ -28,6 +28,7 @@ int main(int argc, char* argv[])
 	// find out the number of processes in MPI_COMM_WORLD
 	MPI_Comm_size(MPI_COMM_WORLD, &proccount);
     std::cout << "PEPOPLE" << std::endl;
+    THREAD_NUMBER_MPI = 256;
     for (PEOPLE_NUM_MPI = 5; PEOPLE_NUM_MPI < 150; PEOPLE_NUM_MPI++)
     {
         start = high_resolution_clock::now();
