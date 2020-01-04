@@ -222,7 +222,7 @@ double* mains(int rank, int proccount, int* outSize, int* outProcSize, unsigned 
     return results;
 }
 
-int main(int argc, char* argv[])
+int mainw(int argc, char* argv[])
 {
     int size, procSize;
     unsigned int peopleNum = 20, threadNum = 8;
