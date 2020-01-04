@@ -146,17 +146,17 @@ void MonteCarlo(double* winProbabilities, int states, int peoples, int iteration
         double* threadResults = new double[states]();
         if (omp_get_thread_num() == 0)
         {
-            printf("%d\n", omp_get_num_threads());
+            //printf("%d\n", omp_get_num_threads());
         }
 #pragma omp for collapse(2)
         for (int state = rank * states; state < (rank + 1) * states; state++)
         {
-            //printf("thread: %d - %d\n", omp_get_thread_num(), state);
             for (int i = 0; i < iterationsNum; i++)
             {
                 if (state >= allStates) {
                     continue;
                 }
+                //printf("thread: %d - %d\n", omp_get_thread_num(), state);
                 bool end = false;
                 bool isYesResult = false;
                 // Begining state
@@ -205,7 +205,7 @@ double* mains(int rank, int proccount, int* outSize, int* outProcSize, unsigned 
 {
     srand(time(NULL));
     int size = CountSize(peopleNum);
-    printf("size: %d\n", size);
+    //printf("size: %d\n", size);
     int sizePerProc = size / proccount;
     int procSize;
 
@@ -225,7 +225,7 @@ double* mains(int rank, int proccount, int* outSize, int* outProcSize, unsigned 
 int main(int argc, char* argv[])
 {
     int size, procSize;
-    unsigned int peopleNum = 10, threadNum = 8;
+    unsigned int peopleNum = 20, threadNum = 8;
     double *results = mains(0, 1, &size, &procSize, peopleNum, threadNum);
 
     for (int i = 0; i < size; i++)
